@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<title>Tablero ODS</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script src="[cdn.jsdelivr.net](https://cdn.jsdelivr.net/npm/chart.js)"></script>
+<script src="[cdn.jsdelivr.net](https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js)"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Segoe UI,Arial,sans-serif;color:#e8eefc;background:#0a1330;overflow-x:hidden}
+canvas#bg{position:fixed;inset:0;z-index:0}
+.wrap{position:relative;z-index:1;max-width:1300px;margin:auto;padding:18px}
+header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+h1{margin:0;font-size:24px}h1 span{color:#38bdf8}
+.btn{background:#2563eb;color:#fff;padding:9px 16px;border-radius:8px;cursor:pointer;font-weight:600}
+.filters{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}
+select{background:#14214a;color:#fff;border:1px solid #2b3d78;padding:8px;border-radius:8px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid #2b3d78;margin-bottom:16px}
+.tab{padding:10px 18px;cursor:pointer;border-radius:8px 8px 0 0;background:#10193d;transition:.3s}
+.tab:hover{background:#1c2c64}.tab.on{background:#2563eb}
+.pane{display:none;animation:in .5s}.pane.on{display:block}
+@keyframes in{from{opacity:0;transform:translateY(12px)}to{opacity:1}}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:16px}
+.kpi,.card{background:rgba(20,33,74,.85);border:1px solid #2b3d78;border-radius:12px;padding:16px;backdrop-filter:blur(6px);transition:.3s}
+.kpi:hover,.card:hover{transform:translateY(-4px);border-color:#38bdf8}
+.kpi b{display:block;font-size:30px;color:#38bdf8}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:14px}
+.card h3{margin:0 0 8px;font-size:15px;color:#9fb4ee}
+.concl li{margin:10px 0;line-height:1.5}
+</style></head><body>
+<canvas id="bg"></canvas>
+<div class="wrap">
+<header><h1>Tablero de control <span>ODS · Sostenibilidad</span></h1>
+<label class="btn">Cargar Excel<input type="file" id="f" accept=".xlsx,.xls,.csv" hidden></label></header>
+<div class="filters" id="filters"></div>
+<div class="tabs" id="tabs"></div>
+<div id="panes"></div>
+</div>
+<script>
+// ---------- Fondo animado ----------
+const bg=document.getElementById('bg'),cx=bg.getContext('2d');let P=[];
+function rs(){bg.width=innerWidth;bg.height=innerHeight;P=Array.from({length:70},()=>({x:Math.random()*bg.width,y:Math.random()*bg.height,vx:(Math.random()-.5)*.6,vy:(Math.random()-.5)*.6}))}
+rs();onresize=rs;
+(function a(){cx.clearRect(0,0,bg.width,bg.height);
+for(const p of P){p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>bg.width)p.vx*=-1;if(p.y<0||p.y>bg.height)p.vy*=-1;
+cx.fillStyle='#38bdf8';cx.beginPath();cx.arc(p.x,p.y,2,0,7);cx.fill();
+for(const q of P){const d=Math.hypot(p.x-q.x,p.y-q.y);if(d<130){cx.strokeStyle='rgba(56,189,248,'+(1-d/130)*.25+')';cx.beginPath();cx.moveTo(p.x,p.y);cx.lineTo(q.x,q.y);cx.stroke()}}}
+requestAnimationFrame(a)})();
+
+// ---------- Datos ----------
+const COLS=['Edad','Género','Estamento','Tiempo vinculación','Sistema','Conoce DS','Mide progreso','Capacitación ODS','Nombre o metas','Actor impulsor','ODS preocupación familia','ODS relevante organización','ODS acción urgente','Medidas necesarias','Variables de decisión'];
+let DATA=[],F={},charts={};
+const fix=s=>{s=String(s??'').trim();if(/[ÃÂ]/.test(s)){try{s=decodeURIComponent(escape(s))}catch(e){}}return s.replace(/[:.]+$/,'').trim()};
+function csv(l){const o=[];let c='',q=false;for(const ch of l){if(ch=='"')q=!q;else if(ch==','&&!q){o.push(c);c=''}else c+=ch}o.push(c);return o}
+document.getElementById('f').onchange=e=>{const r=new FileReader();r.onload=ev=>{
+const wb=XLSX.read(ev.target.result,{type:'array'});
+let rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
+rows=rows.map(r=>r.length==1?csv(String(r[0])):r);
+DATA=rows.slice(1).filter(r=>r.length>=14).map(r=>COLS.map((_,i)=>fix(r[i])));
+init()};r.readAsArrayBuffer(e.target.files[0])};
+
+const rows=()=>DATA.filter(r=>Object.entries(F).every(([i,v])=>!v||r[i]==v));
+const cnt=(i,rs=rows())=>{const m={};rs.forEach(r=>m[r[i]||'Sin respuesta']=(m[r[i]||'Sin respuesta']||0)+1);return Object.entries(m).sort((a,b)=>b[1]-a[1])};
+const odsN=s=>+(s.match(/\d+/)||[99])[0];
+const pct=(i,v,rs=rows())=>rs.length?Math.round(100*rs.filter(r=>r[i]==v).length/rs.length):0;
+const PAL=['#38bdf8','#2563eb','#22d3ee','#818cf8','#34d399','#fbbf24','#f87171','#a78bfa','#fb923c','#2dd4bf'];
+
+// ---------- Estructura ----------
+const TABS={
+ 'Resumen':[['Conoce DS',5,'doughnut'],['Mide progreso',6,'pie'],['Capacitación ODS',7,'pie'],['Actor impulsor',9,'bar']],
+ 'Perfil':[['Edad',0,'doughnut'],['Género',1,'pie'],['Estamento',2,'bar'],['Tiempo vinculación',3,'bar'],['Sistema',4,'bar']],
+ 'Conocimiento':[['Conoce DS',5,'bar'],['Nombre o metas',8,'doughnut'],['Variables de decisión',14,'bar'],['Capacitación ODS',7,'doughnut']],
+ 'Prioridades ODS':[['ODS',[10,11,12],'multi']],
+ 'Medidas y políticas':[['Medidas necesarias',13,'bar'],['Variables de decisión',14,'bar'],['Actor impulsor',9,'doughnut']]
+};
+let cur='Resumen';
+function init(){
+ const fl=document.getElementById('filters');fl.innerHTML='';F={};
+ [0,1,2,3,4].forEach(i=>{const s=document.createElement('select');
+  s.innerHTML='<option value="">'+COLS[i]+': todos</option>'+[...new Set(DATA.map(r=>r[i]))].sort().map(v=>`<option>${v}</option>`).join('');
+  s.onchange=()=>{F[i]=s.value;render()};fl.appendChild(s)});
+ const t=document.getElementById('tabs');t.innerHTML='';
+ [...Object.keys(TABS),'Conclusiones'].forEach(k=>{const d=document.createElement('div');d.className='tab';d.textContent=k;d.onclick=()=>{cur=k;render()};t.appendChild(d)});
+ render()}
+function render(){
+ const R=rows();
+ [...document.querySelectorAll('.tab')].forEach(t=>t.classList.toggle('on',t.textContent==cur));
+ Object.values(charts).forEach(c=>c.destroy());charts={};
+ const p=document.getElementById('panes');
+ let h='';
+ if(cur=='Resumen')h+=`<div class="kpis"><div class="kpi">Registros<b>${R.length}</b></div><div class="kpi">Conocen DS (completamente)<b>${pct(5,'Completamente',R)}%</b></div><div class="kpi">Org. mide sostenibilidad<b>${pct(6,'Si',R)}%</b></div><div class="kpi">Recibió capacitación<b>${pct(7,'Si',R)}%</b></div><div class="kpi">Usa las metas<b>${pct(8,'Reviso las metas',R)}%</b></div></div>`;
+ if(cur=='Conclusiones'){
+  const top=i=>cnt(i,R)[0]||['-',0],p2=(i)=>{const t=top(i);return `${t[0]} (${R.length?Math.round(100*t[1]/R.length):0}%)`};
+  const od=i=>{const c=cnt(i,R).filter(x=>/ODS/.test(x[0]));return c.slice(0,3).map(x=>x[0]).join(', ')};
+  p.innerHTML=`<div class="pane on"><div class="card"><h3>Conclusiones (se actualizan con los filtros)</h3><ol class="concl">
+  <li><b>Base analizada:</b> ${R.length} respuestas. Perfil predominante: ${p2(0)}, ${p2(1)}, ${p2(2)}, sistema ${p2(4)}.</li>
+  <li><b>Conocimiento:</b> el ${pct(5,'Completamente',R)}% dice conocer completamente el Desarrollo Sostenible y el ${pct(5,'Tengo una idea del concepto',R)}% solo tiene una idea; existe una brecha de apropiación.</li>
+  <li><b>Gestión organizacional:</b> solo el ${pct(6,'Si',R)}% indica que la organización mide su progreso en sostenibilidad y el ${pct(7,'Si',R)}% recibió capacitación en ODS: hay déficit de medición y formación.</li>
+  <li><b>Uso de los ODS:</b> respuesta más común: ${p2(8)}.</li>
+  <li><b>Prioridades:</b> preocupación familiar: ${od(10)}. Relevantes para la organización: ${od(11)}. Acción más urgente: ${od(12)}.</li>
+  <li><b>Actor responsable:</b> ${p2(9)}. <b>Medida preferida:</b> ${p2(13)}.</li>
+  <li><b>Decisiones:</b> la variable con mayor influencia es ${p2(14)}.</li>
+  <li><b>Recomendaciones:</b> (1) plan de capacitación ODS masivo; (2) indicadores de sostenibilidad con reporte periódico; (3) alinear la agenda institucional con los ODS prioritarios; (4) campañas de sensibilización para quienes solo tienen una idea del concepto.</li></ol></div></div>`;return}
+ const items=TABS[cur];
+ h+='<div class="grid">'+items.map((_,k)=>`<div class="card"><h3>${items[k][0]}</h3><canvas id="c${k}"></canvas></div>`).join('')+'</div>';
+ p.innerHTML=`<div class="pane on">${h}</div>`;
+ items.forEach(([n,i,type],k)=>{
+  const ctx=document.getElementById('c'+k);let cfg;
+  Chart.defaults.color='#cdd9ff';
+  if(type=='multi'){
+   const L=[...new Set(i.flatMap(j=>cnt(j,R).map(x=>x[0])).filter(x=>/ODS/.test(x)))].sort((a,b)=>odsN(a)-odsN(b));
+   cfg={type:'bar',data:{labels:L,datasets:i.map((j,z)=>{const m=Object.fromEntries(cnt(j,R));return{label:COLS[j],data:L.map(l=>m[l]||0),backgroundColor:PAL[z]}})}};
+  }else{const c=cnt(i,R);cfg={type,data:{labels:c.map(x=>x[0]),datasets:[{data:c.map(x=>x[1]),backgroundColor:PAL}]},options:{indexAxis:type=='bar'?'y':'x'}}}
+  cfg.options=Object.assign({animation:{duration:900},plugins:{legend:{display:type!='bar'}}},cfg.options||{});
+  charts[k]=new Chart(ctx,cfg)})}
+</script></body></html>
