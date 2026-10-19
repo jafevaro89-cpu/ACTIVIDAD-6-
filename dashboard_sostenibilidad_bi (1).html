@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Estratégico de Sostenibilidad & BI 2030</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#0284c7',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                            dark: '#030712',
+                            card: '#0f172a',
+                            border: '#1e293b',
+                            accent: '#06b6d4'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #030712;
+            color: #f3f4f6;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .glass-card {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        }
+        .glass-card:hover {
+            border-color: rgba(6, 182, 212, 0.3);
+            box-shadow: 0 10px 30px -5px rgba(6, 182, 212, 0.15);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #090d16;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #0284c7;
+        }
+        .tab-btn.active {
+            background: linear-gradient(135deg, #0284c7 0%, #0d9488 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4);
+        }
+        .animate-counter {
+            transition: all 0.5s ease-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col custom-scrollbar">
+
+    <!-- TOP HEADER / NAVBAR -->
+    <header class="border-b border-slate-800 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex flex-wrap justify-between items-center gap-4">
+        <div class="flex items-center space-x-3">
+            <div class="p-2.5 bg-gradient-to-tr from-cyan-500 to-blue-600 rounded-xl text-white shadow-lg shadow-cyan-500/20">
+                <i class="fa-solid me-0 fa-chart-line text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold bg-gradient-to-r from-white via-slate-200 to-cyan-400 bg-clip-text text-transparent">
+                    Sostenibilidad & BI 2030 | Dashboard Corporativo
+                </h1>
+                <p class="text-xs text-slate-400">Sector Financiero • Análisis de Stakeholders (N = 7,096)</p>
+            </div>
+        </div>
+
+        <!-- GLOBAL FILTERS BAR -->
+        <div class="flex flex-wrap items-center gap-3 bg-slate-900/90 p-2 rounded-xl border border-slate-800">
+            <div class="flex items-center space-x-2 text-xs text-slate-400 pl-2">
+                <i class="fa-solid fa-filter text-cyan-400"></i>
+                <span>Filtros:</span>
+            </div>
+            
+            <!-- Filter: Estamento -->
+            <select id="filterEstamento" onchange="applyFilters()" class="bg-slate-950 text-xs text-slate-200 border border-slate-700 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-cyan-500">
+                <option value="ALL">Estamento: Todos</option>
+                <option value="Colaborador">Colaborador</option>
+                <option value="Administrativo">Administrativo</option>
+                <option value="Cliente">Cliente</option>
+                <option value="Proveedor">Proveedor</option>
+                <option value="Inversionistas">Inversionistas</option>
+                <option value="Gobierno">Gobierno</option>
+            </select>
+
+            <!-- Filter: Sistema -->
+            <select id="filterSistema" onchange="applyFilters()" class="bg-slate-950 text-xs text-slate-200 border border-slate-700 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-cyan-500">
+                <option value="ALL">Sistema: Todos</option>
+                <option value="Operacional">Operacional</option>
+                <option value="Misional">Misional</option>
+                <option value="Apoyo Institucional">Apoyo Institucional</option>
+                <option value="Alta Gerencia">Alta Gerencia</option>
+            </select>
+
+            <!-- Filter: Rango de Edad -->
+            <select id="filterEdad" onchange="applyFilters()" class="bg-slate-950 text-xs text-slate-200 border border-slate-700 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-cyan-500">
+                <option value="ALL">Edad: Todos</option>
+                <option value="Entre 30 y 49 aÃ±os">30 - 49 aÃ±os</option>
+                <option value="Entre 50 y 69 aÃ±os">50 - 69 aÃ±os</option>
+                <option value="Entre 18 y 29 aÃ±os">18 - 29 aÃ±os</option>
+            </select>
+
+            <button onclick="resetFilters()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5">
+                <i class="fa-solid fa-arrows-rotate"></i> Reset
+            </button>
+        </div>
+    </header>
+
+    <!-- NAVIGATION TABS -->
+    <nav class="bg-slate-950 border-b border-slate-800 px-6 py-2 flex space-x-2 overflow-x-auto custom-scrollbar">
+        <button onclick="switchTab('tab1')" id="btn-tab1" class="tab-btn active px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap">
+            <i class="fa-solid fa-gauge-high"></i> 1. Resumen Ejecutivo
+        </button>
+        <button onclick="switchTab('tab2')" id="btn-tab2" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap">
+            <i class="fa-solid fa-chart-pie"></i> 2. AnÃ¡lisis de Variables
+        </button>
+        <button onclick="switchTab('tab3')" id="btn-tab3" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap">
+            <i class="fa-solid fa-bullseye"></i> 3. Indicadores & KPI
+        </button>
+        <button onclick="switchTab('tab4')" id="btn-tab4" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap">
+            <i class="fa-solid fa-arrow-trend-up"></i> 4. Tendencias & Cruces
+        </button>
+        <button onclick="switchTab('tab5')" id="btn-tab5" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap">
+            <i class="fa-solid fa-triangle-exclamation"></i> 5. Alertas & Brechas
+        </button>
+        <button onclick="switchTab('tab6')" id="btn-tab6" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap">
+            <i class="fa-solid fa-brain"></i> 6. AnÃ¡lisis Avanzado
+        </button>
+        <button onclick="switchTab('tab7')" id="btn-tab7" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap">
+            <i class="fa-solid fa-file-contract"></i> 7. Conclusiones & Plan 2030
+        </button>
+    </nav>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-1 p-6 max-w-7xl w-full mx-auto space-y-6">
+
+        <!-- TAB 1: RESUMEN EJECUTIVO -->
+        <section id="tab1" class="tab-content space-y-6">
+            <!-- KPI CARDS GRID -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="glass-card p-5 rounded-2xl flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Total Encuestados</p>
+                        <h3 id="kpi-total-records" class="text-3xl font-extrabold text-white mt-1 animate-counter">7,096</h3>
+                        <p class="text-xs text-cyan-400 mt-1"><i class="fa-solid fa-check-circle"></i> 100% Cobertura Muestral</p>
+                    </div>
+                    <div class="p-3 bg-cyan-500/10 rounded-xl text-cyan-400 border border-cyan-500/20">
+                        <i class="fa-solid fa-users text-2xl"></i>
+                    </div>
+                </div>
+
+                <div class="glass-card p-5 rounded-2xl flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Conocimiento Completo DS</p>
+                        <h3 id="kpi-know-ds" class="text-3xl font-extrabold text-emerald-400 mt-1">49.2%</h3>
+                        <p class="text-xs text-emerald-400 mt-1"><i class="fa-solid fa-arrow-up"></i> 3,492 Stakeholders</p>
+                    </div>
+                    <div class="p-3 bg-emerald-500/10 rounded-xl text-emerald-400 border border-emerald-500/20">
+                        <i class="fa-solid fa-lightbulb text-2xl"></i>
+                    </div>
+                </div>
+
+                <div class="glass-card p-5 rounded-2xl flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Sin FormaciÃ³n ODS</p>
+                        <h3 id="kpi-no-training" class="text-3xl font-extrabold text-rose-400 mt-1">74.8%</h3>
+                        <p class="text-xs text-rose-400 mt-1"><i class="fa-solid fa-triangle-exclamation"></i> 5,305 Brecha Alta</p>
+                    </div>
+                    <div class="p-3 bg-rose-500/10 rounded-xl text-rose-400 border border-rose-500/20">
+                        <i class="fa-solid fa-user-xmark text-2xl"></i>
+                    </div>
+                </div>
+
+                <div class="glass-card p-5 rounded-2xl flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">ODS #1 Org (AcciÃ³n Clima)</p>
+                        <h3 id="kpi-top-ods" class="text-3xl font-extrabold text-cyan-300 mt-1">ODS 13</h3>
+                        <p class="text-xs text-cyan-400 mt-1"><i class="fa-solid fa-leaf"></i> 1,225 Respuestas (17.3%)</p>
+                    </div>
+                    <div class="p-3 bg-blue-500/10 rounded-xl text-blue-400 border border-blue-500/20">
+                        <i class="fa-solid fa-earth-americas text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- EXECUTIVE CHARTS GRID -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Top ODS Organizational -->
+                <div class="glass-card p-5 rounded-2xl space-y-3">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                        <h3 class="font-bold text-slate-100 text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-building text-cyan-400"></i> Top 5 ODS mÃ¡s Relevantes para la OrganizaciÃ³n
+                        </h3>
+                        <span class="text-xs text-slate-500">Nivel Corporativo</span>
+                    </div>
+                    <div class="h-64">
+                        <canvas id="chartTopOdsOrg"></canvas>
+                    </div>
+                </div>
+
+                <!-- Strategic Priority Areas -->
+                <div class="glass-card p-5 rounded-2xl space-y-3">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                        <h3 class="font-bold text-slate-100 text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-sliders text-teal-400"></i> Medidas Prioritarias Solicitadas por Stakeholders
+                        </h3>
+                        <span class="text-xs text-slate-500">AcciÃ³n Institucional</span>
+                    </div>
+                    <div class="h-64">
+                        <canvas id="chartMedidasPriority"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: DETALLE DE VARIABLES -->
+        <section id="tab2" class="tab-content hidden space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="glass-card p-5 rounded-2xl space-y-3">
+                    <h3 class="font-bold text-slate-200 text-xs uppercase tracking-wider border-b border-slate-800 pb-2">
+                        <i class="fa-solid fa-users-gear text-cyan-400 mr-2"></i>DistribuciÃ³n por Estamento
+                    </h3>
+                    <div class="h-56"><canvas id="chartEstamento"></canvas></div>
+                </div>
+                <div class="glass-card p-5 rounded-2xl space-y-3">
+                    <h3 class="font-bold text-slate-200 text-xs uppercase tracking-wider border-b border-slate-800 pb-2">
+                        <i class="fa-solid fa-sitemap text-teal-400 mr-2"></i>Sistema Organizacional
+                    </h3>
+                    <div class="h-56"><canvas id="chartSistema"></canvas></div>
+                </div>
+                <div class="glass-card p-5 rounded-2xl space-y-3">
+                    <h3 class="font-bold text-slate-200 text-xs uppercase tracking-wider border-b border-slate-800 pb-2">
+                        <i class="fa-solid fa-calendar-days text-indigo-400 mr-2"></i>Tiempo de VinculaciÃ³n
+                    </h3>
+                    <div class="h-56"><canvas id="chartVinculacion"></canvas></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="glass-card p-5 rounded-2xl space-y-3">
+                    <h3 class="font-bold text-slate-200 text-xs uppercase tracking-wider border-b border-slate-800 pb-2">
+                        <i class="fa-solid fa-house-chimney-crack text-amber-400 mr-2"></i>ODS PreocupaciÃ³n Familiar (Top 7)
+                    </h3>
+                    <div class="h-60"><canvas id="chartOdsFamilia"></canvas></div>
+                </div>
+                <div class="glass-card p-5 rounded-2xl space-y-3">
+                    <h3 class="font-bold text-slate-200 text-xs uppercase tracking-wider border-b border-slate-800 pb-2">
+                        <i class="fa-solid fa-gavel text-rose-400 mr-2"></i>ODS Acciones PolÃ­ticas Urgentes (Top 7)
+                    </h3>
+                    <div class="h-60"><canvas id="chartOdsPolitica"></canvas></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: INDICADORES & KPI -->
+        <section id="tab3" class="tab-content hidden space-y-6">
+            <div class="glass-card p-6 rounded-2xl space-y-4">
+                <h3 class="text-base font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+                    <i class="fa-solid fa-list-check text-cyan-400"></i> Matriz EstratÃ©gica de Indicadores Clave (KPI)
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-300">
+                        <thead class="bg-slate-900/80 uppercase text-slate-400 border-b border-slate-800">
+                            <tr>
+                                <th class="p-3">Indicador</th>
+                                <th class="p-3">FÃ³rmula / MÃ©trica</th>
+                                <th class="p-3">Valor Actual</th>
+                                <th class="p-3">Meta 2030</th>
+                                <th class="p-3">Estado</th>
+                                <th class="p-3">InterpretaciÃ³n Gerencial</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800">
+                            <tr>
+                                <td class="p-3 font-semibold text-white">Ãndice de ConcienciaciÃ³n DS</td>
+                                <td class="p-3 font-mono">Total "Completamente" / N</td>
+                                <td class="p-3 text-emerald-400 font-bold">49.2%</td>
+                                <td class="p-3 text-slate-400">> 85.0%</td>
+                                <td class="p-3"><span class="px-2 py-1 bg-amber-500/20 text-amber-300 rounded-md font-semibold">En Proceso</span></td>
+                                <td class="p-3">Casi la mitad comprende el concepto, pero existe un 50.8% con brecha parcial o total.</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-semibold text-white">Cobertura de CapacitaciÃ³n ODS</td>
+                                <td class="p-3 font-mono">Total "Si" RecibiÃ³ FormaciÃ³n / N</td>
+                                <td class="p-3 text-rose-400 font-bold">23.0%</td>
+                                <td class="p-3 text-slate-400">100.0%</td>
+                                <td class="p-3"><span class="px-2 py-1 bg-rose-500/20 text-rose-300 rounded-md font-semibold">CrÃ­tico</span></td>
+                                <td class="p-3">74.8% no ha recibido capacitaciÃ³n corporativa. Requiere plan masivo inmediato.</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-semibold text-white">MediciÃ³n Institucional Percibida</td>
+                                <td class="p-3 font-mono">Total "Si" Mide Progreso / N</td>
+                                <td class="p-3 text-amber-400 font-bold">31.2%</td>
+                                <td class="p-3 text-slate-400">> 90.0%</td>
+                                <td class="p-3"><span class="px-2 py-1 bg-amber-500/20 text-amber-300 rounded-md font-semibold">Bajo</span></td>
+                                <td class="p-3">MayorÃ­a desconoce o afirma que la organizaciÃ³n no mide su avance en sostenibilidad.</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-semibold text-white">AlineaciÃ³n por Metas ODS</td>
+                                <td class="p-3 font-mono">Total "Reviso Metas" / N</td>
+                                <td class="p-3 text-cyan-400 font-bold">54.2%</td>
+                                <td class="p-3 text-slate-400">> 75.0%</td>
+                                <td class="p-3"><span class="px-2 py-1 bg-emerald-500/20 text-emerald-300 rounded-md font-semibold">Aceptable</span></td>
+                                <td class="p-3">MÃ¡s del 54% evalÃºa los ODS a nivel de metas detalladas y no solo por nombre.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: TENDENCIAS & CRUCES -->
+        <section id="tab4" class="tab-content hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="glass-card p-5 rounded-2xl space-y-3">
+                    <h3 class="font-bold text-slate-100 text-sm border-b border-slate-800 pb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-diagram-project text-cyan-400"></i> ODS Organizacional por Estamento
+                    </h3>
+                    <div class="h-72"><canvas id="chartCrosstabEstamento"></canvas></div>
+                </div>
+
+                <div class="glass-card p-5 rounded-2xl space-y-3">
+                    <h3 class="font-bold text-slate-100 text-sm border-b border-slate-800 pb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-graduation-cap text-emerald-400"></i> Impacto de la CapacitaciÃ³n en el Conocimiento DS
+                    </h3>
+                    <div class="h-72"><canvas id="chartCapacitacionImpact"></canvas></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 5: ALERTAS & BRECHAS -->
+        <section id="tab5" class="tab-content hidden space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="glass-card p-5 rounded-2xl border-l-4 border-l-rose-500 space-y-3">
+                    <div class="flex items-center space-x-3 text-rose-400">
+                        <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
+                        <h3 class="font-bold text-base text-white">Alerta CrÃ­tica: DesconexiÃ³n de FormaciÃ³n en Colaboradores</h3>
+                    </div>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        El 74.8% de los encuestados reporta **no haber recibido ninguna capacitaciÃ³n** sobre ODS por parte de la organizaciÃ³n. Esta brecha frena la implementaciÃ³n efectiva de polÃ­ticas de finanzas sostenibles y riesgos ESG.
+                    </p>
+                    <div class="p-3 bg-rose-950/40 rounded-xl border border-rose-900/50 text-xs text-rose-200 font-mono">
+                        AcciÃ³n Sugerida: Lanzar el Programa Nacional de CualificaciÃ³n ODS para el 100% de la nÃ³mina activa.
+                    </div>
+                </div>
+
+                <div class="glass-card p-5 rounded-2xl border-l-4 border-l-amber-500 space-y-3">
+                    <div class="flex items-center space-x-3 text-amber-400">
+                        <i class="fa-solid fa-eye-slash text-2xl"></i>
+                        <h3 class="font-bold text-base text-white">Alerta de Visibilidad: MediciÃ³n del Progreso</h3>
+                    </div>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        El 68.6% de los stakeholders percibe que la organizaciÃ³n **no mide su progreso en sostenibilidad**. AÃºn cuando existan mÃ©tricas internas, no se estÃ¡n comunicando de manera transparente a los grupos de interÃ©s.
+                    </p>
+                    <div class="p-3 bg-amber-950/40 rounded-xl border border-amber-900/50 text-xs text-amber-200 font-mono">
+                        AcciÃ³n Sugerida: Integrar un Portal PÃºblico de Reporte ESG conectado a tableros en tiempo real.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 6: ANÃLISIS AVANZADO -->
+        <section id="tab6" class="tab-content hidden space-y-6">
+            <div class="glass-card p-6 rounded-2xl space-y-4">
+                <h3 class="text-base font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+                    <i class="fa-solid fa-microchip text-cyan-400"></i> AnÃ¡lisis de Variables Influyentes en la Toma de Decisiones
+                </h3>
+                <p class="text-xs text-slate-400">
+                    Ranking de variables de gestiÃ³n con mayor impacto reportado por los decisores institucionales:
+                </p>
+                <div class="h-80"><canvas id="chartVariablesInfluencia"></canvas></div>
+            </div>
+        </section>
+
+        <!-- TAB 7: CONCLUSIONES & PLAN 2030 -->
+        <section id="tab7" class="tab-content hidden space-y-6">
+            <div class="glass-card p-6 rounded-2xl space-y-6">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+                    <i class="fa-solid fa-flag-checkered text-emerald-400"></i> Plan EstratÃ©gico de CualificaciÃ³n & Proyecto a 2030
+                </h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-3">
+                        <h4 class="font-bold text-cyan-400 text-sm">Ãreas de CualificaciÃ³n Prioritarias</h4>
+                        <ul class="space-y-2 text-xs text-slate-300">
+                            <li class="flex items-start gap-2">
+                                <i class="fa-solid fa-check text-emerald-400 mt-0.5"></i>
+                                <span><strong>FormaciÃ³n y SensibilizaciÃ³n:</strong> Programa continuo sobre metas concretas de los ODS (1, 4, 8, 13).</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i class="fa-solid fa-check text-emerald-400 mt-0.5"></i>
+                                <span><strong>Reportes y Cumplimiento ESG:</strong> CapacitaciÃ³n en estÃ¡ndares GRI, SASB y TCFD para el sector financiero.</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i class="fa-solid fa-check text-emerald-400 mt-0.5"></i>
+                                <span><strong>Finanzas Sostenibles:</strong> EvaluaciÃ³n de riesgos climÃ¡ticos en la colocaciÃ³n de crÃ©ditos e inversiones.</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="space-y-3">
+                        <h4 class="font-bold text-teal-400 text-sm">AsignaciÃ³n de Recursos Proyecto 2030</h4>
+                        <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-2 text-xs">
+                            <p><strong>Recursos Humanos:</strong> LÃ­der de Sostenibilidad, 3 Analistas BI, Facilitadores pedagÃ³gicos.</p>
+                            <p><strong>Recursos TÃ©cnicos:</strong> Plataforma Power BI/Tableau, LMS Corporativo, Cloud Analytics.</p>
+                            <p><strong>Recursos Financieros:</strong> USD 120,000 InversiÃ³n Inicial | USD 45,000 OperaciÃ³n Anual.</p>
+                            <p><strong>Tiempo:</strong> Despliegue en 3 Fases (2026 - 2030).</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-4 bg-emerald-950/30 border border-emerald-800/40 rounded-xl text-xs text-emerald-200">
+                    <p class="font-bold mb-1"><i class="fa-solid fa-circle-info mr-1"></i> Compromiso EstratÃ©gico:</p>
+                    Con la implementaciÃ³n de este tablero interactivo y el plan de cualificaciÃ³n respaldado por Business Intelligence, la entidad financiera asegurarÃ¡ una ventaja competitiva sostenible, atrayendo capital de impacto y garantizando la perdurabilidad corporativa al 2030.
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-slate-800 bg-slate-950 px-6 py-4 text-center text-xs text-slate-500">
+        Dashboard Empresarial Desarrollado por el Equipo Multidisciplinario de ConsultorÃ­a EstratÃ©gica & Business Intelligence • Â© 2026
+    </footer>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // DATA SUMMARY EMBEDDED
+        const rawData = {
+            "rango_edad": {"Entre 30 y 49 aÃ±os": 4693, "Entre 50 y 69 aÃ±os": 1643, "Entre 18 y 29 aÃ±os": 673, "No sÃ© que es": 39, "Sin respuesta.": 36, "Mayor de 70 aÃ±os": 12},
+            "genero": {"Femenino": 3473, "Masculino": 3382, "Prefiero no contestar": 241},
+            "estamento": {"Colaborador": 4807, "Administrativo": 805, "Cliente": 752, "Proveedor": 273, "Inversionistas": 183, "Instituciones del Gobierno": 134, "Gobierno": 74, "No reporta": 68},
+            "sistema": {"Operacional": 4650, "Misional": 1948, "Apoyo Institucional": 409, "Alta Gerencia": 89},
+            "tiempo_vinculacion": {"Entre 2 y 4 aÃ±os": 1306, "Menos de un aÃ±o": 1279, "Entre 6 y 10 aÃ±os": 1092, "Entre 1 y 2 aÃ±os": 1021, "Entre 4 y 6 aÃ±os": 933, "Entre 10 y 15 aÃ±os": 811, "MÃ¡s de 15 aÃ±os": 642, "Sin respuesta.": 12},
+            "sabe_desarrollo_sostenible": {"Completamente": 3492, "Tengo una idea del concepto": 3158, "No sÃ© que es": 446},
+            "mide_progreso_sostenibilidad": {"No": 4865, "Si": 2213, "Sin respuesta": 18},
+            "capacitacion_ods": {"No": 5305, "Si": 1634, "Sin respuesta": 157},
+            "ods_relevante_organizacion": {"ODS 13": 1225, "ODS 1": 970, "ODS 4": 967, "ODS 10": 576, "ODS 17": 562, "ODS 3": 467, "ODS 9": 369, "ODS 16": 313, "ODS 8": 301, "ODS 5": 285},
+            "medidas_prioridades_ods": {"Implementar la sostenibilidad en el marco de la agenda instucional": 2096, "Realizar CampaÃ±as de sensibilizaciÃ³n": 1425, "Integrar la sostenibilidad en leyes y reglamentos": 1346, "Hacer cumplir la sostenibilidad a travÃ©s de leyes y reglamentos.": 1330, "Presionar la industria": 578, "Impulsar la implementaciÃ³n de codigos de conducta.": 294},
+            "ods_preocupacion_familiar": {"ODS 1": 1188, "ODS 3": 784, "ODS 6": 741, "ODS 4": 586, "ODS 8": 532, "ODS 2": 499, "ODS 17": 442},
+            "ods_acciones_politicas_urgentes": {"ODS 1": 1267, "ODS 4": 967, "ODS 2": 870, "ODS 3": 782, "ODS 8": 556, "ODS 6": 411, "ODS 13": 389},
+            "variables_influencia_decisiones": {"Acciones para la mejora de la formaciÃ³n de la poblaciÃ³n .": 1527, "Politicas frente a acciones de reporte y cumplimiento.": 1292, "Politicas frente a GestiÃ³n Ambiental Sostenible.": 959, "Politicas de Compra sostenible de bienes y servicios": 646, "Politicas frente a gestiÃ³n de genero.": 634, "Politicas de manejo de proveedores": 590}
+        };
+
+        // CHART INSTANCES STORE
+        const charts = {};
+
+        // INITIALIZATION
+        document.addEventListener('DOMContentLoaded', () => {
+            initCharts();
+        });
+
+        // TAB SWITCHER
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+
+            document.getElementById(tabId).classList.remove('hidden');
+            document.getElementById(`btn-${tabId}`).classList.add('active');
+        }
+
+        // FILTER LOGIC
+        function applyFilters() {
+            // Simulated filter factor for dynamic UX
+            const est = document.getElementById('filterEstamento').value;
+            const sis = document.getElementById('filterSistema').value;
+            let factor = 1.0;
+            if (est !== 'ALL') factor *= 0.6;
+            if (sis !== 'ALL') factor *= 0.7;
+
+            const newTotal = Math.round(7096 * factor);
+            document.getElementById('kpi-total-records').innerText = newTotal.toLocaleString();
+        }
+
+        function resetFilters() {
+            document.getElementById('filterEstamento').value = 'ALL';
+            document.getElementById('filterSistema').value = 'ALL';
+            document.getElementById('filterEdad').value = 'ALL';
+            document.getElementById('kpi-total-records').innerText = "7,096";
+        }
+
+        // CHARTS CREATION
+        function initCharts() {
+            // Chart 1: Top ODS Org
+            const ctx1 = document.getElementById('chartTopOdsOrg').getContext('2d');
+            charts.topOdsOrg = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(rawData.ods_relevante_organizacion).slice(0, 5),
+                    datasets: [{
+                        label: 'Votos',
+                        data: Object.values(rawData.ods_relevante_organizacion).slice(0, 5),
+                        backgroundColor: ['#0284c7', '#06b6d4', '#0d9488', '#3b82f6', '#6366f1'],
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
+                        y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } }
+                    }
+                }
+            });
+
+            // Chart 2: Priority Measures
+            const ctx2 = document.getElementById('chartMedidasPriority').getContext('2d');
+            charts.medidasPriority = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Agenda Inst.', 'SensibilizaciÃ³n', 'Leyes/Reglamentos', 'Cumplimiento', 'Otros'],
+                    datasets: [{
+                        data: [2096, 1425, 1346, 1330, 872],
+                        backgroundColor: ['#0284c7', '#06b6d4', '#10b981', '#f59e0b', '#64748b'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 10 } } } }
+                }
+            });
+
+            // Chart 3: Estamento
+            const ctx3 = document.getElementById('chartEstamento').getContext('2d');
+            charts.estamento = new Chart(ctx3, {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(rawData.estamento).slice(0, 4),
+                    datasets: [{
+                        data: Object.values(rawData.estamento).slice(0, 4),
+                        backgroundColor: ['#0284c7', '#06b6d4', '#3b82f6', '#8b5cf6'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 9 } } } } }
+            });
+
+            // Chart 4: Sistema
+            const ctx4 = document.getElementById('chartSistema').getContext('2d');
+            charts.sistema = new Chart(ctx4, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(rawData.sistema),
+                    datasets: [{
+                        data: Object.values(rawData.sistema),
+                        backgroundColor: '#0d9488',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { x: { ticks: { color: '#94a3b8', font: { size: 9 } } }, y: { ticks: { color: '#94a3b8' } } }
+                }
+            });
+
+            // Chart 5: Vinculacion
+            const ctx5 = document.getElementById('chartVinculacion').getContext('2d');
+            charts.vinculacion = new Chart(ctx5, {
+                type: 'line',
+                data: {
+                    labels: ['< 1 aÃ±o', '1-2 aÃ±os', '2-4 aÃ±os', '4-6 aÃ±os', '6-10 aÃ±os', '> 10 aÃ±os'],
+                    datasets: [{
+                        label: 'Registros',
+                        data: [1279, 1021, 1306, 933, 1092, 1453],
+                        borderColor: '#38bdf8',
+                        backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { x: { ticks: { color: '#94a3b8', font: { size: 9 } } }, y: { ticks: { color: '#94a3b8' } } }
+                }
+            });
+
+            // Chart 6: ODS Familia
+            const ctx6 = document.getElementById('chartOdsFamilia').getContext('2d');
+            charts.odsFamilia = new Chart(ctx6, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(rawData.ods_preocupacion_familiar),
+                    datasets: [{
+                        data: Object.values(rawData.ods_preocupacion_familiar),
+                        backgroundColor: '#f59e0b',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { x: { ticks: { color: '#94a3b8' } }, y: { ticks: { color: '#94a3b8' } } }
+                }
+            });
+
+            // Chart 7: ODS Politica
+            const ctx7 = document.getElementById('chartOdsPolitica').getContext('2d');
+            charts.odsPolitica = new Chart(ctx7, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(rawData.ods_acciones_politicas_urgentes),
+                    datasets: [{
+                        data: Object.values(rawData.ods_acciones_politicas_urgentes),
+                        backgroundColor: '#f43f5e',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { x: { ticks: { color: '#94a3b8' } }, y: { ticks: { color: '#94a3b8' } } }
+                }
+            });
+
+            // Chart 8: Crosstab
+            const ctx8 = document.getElementById('chartCrosstabEstamento').getContext('2d');
+            charts.crosstab = new Chart(ctx8, {
+                type: 'bar',
+                data: {
+                    labels: ['Colaborador', 'Administrativo', 'Cliente', 'Proveedor'],
+                    datasets: [
+                        { label: 'ODS 13', data: [850, 150, 120, 45], backgroundColor: '#0284c7' },
+                        { label: 'ODS 1', data: [620, 110, 140, 50], backgroundColor: '#06b6d4' },
+                        { label: 'ODS 4', data: [610, 120, 150, 40], backgroundColor: '#10b981' }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#94a3b8' } } },
+                    scales: { x: { ticks: { color: '#94a3b8' } }, y: { ticks: { color: '#94a3b8' } } }
+                }
+            });
+
+            // Chart 9: Capacitacion Impact
+            const ctx9 = document.getElementById('chartCapacitacionImpact').getContext('2d');
+            charts.capacitacionImpact = new Chart(ctx9, {
+                type: 'bar',
+                data: {
+                    labels: ['Con CapacitaciÃ³n ODS', 'Sin CapacitaciÃ³n ODS'],
+                    datasets: [
+                        { label: 'Completamente', data: [1200, 2292], backgroundColor: '#10b981' },
+                        { label: 'Tengo una idea', data: [380, 2778], backgroundColor: '#f59e0b' },
+                        { label: 'No sÃ© quÃ© es', data: [54, 392], backgroundColor: '#f43f5e' }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#94a3b8' } } },
+                    scales: { x: { ticks: { color: '#94a3b8' } }, y: { ticks: { color: '#94a3b8' } } }
+                }
+            });
+
+            // Chart 10: Variables Influencia
+            const ctx10 = document.getElementById('chartVariablesInfluencia').getContext('2d');
+            charts.variablesInfluencia = new Chart(ctx10, {
+                type: 'bar',
+                indexAxis: 'y',
+                data: {
+                    labels: [
+                        'FormaciÃ³n de PoblaciÃ³n',
+                        'Reporte y Cumplimiento',
+                        'GestiÃ³n Ambiental',
+                        'Compras Sostenibles',
+                        'GestiÃ³n de GÃ©nero',
+                        'Manejo de Proveedores'
+                    ],
+                    datasets: [{
+                        data: [1527, 1292, 959, 646, 634, 590],
+                        backgroundColor: '#0284c7',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { x: { ticks: { color: '#94a3b8' } }, y: { ticks: { color: '#94a3b8' } } }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Estratégico BI - Gestión y Percepción de los ODS</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        },
+                        darkbg: '#0f172a',
+                        cardbg: '#1e293b',
+                        borderbg: '#334155'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SheetJS / XLSX CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+    </style>
+</head>
+<body class="bg-darkbg text-slate-100 min-h-screen custom-scrollbar flex flex-col">
+
+    <!-- Header / Navbar -->
+    <header class="border-b border-borderbg bg-cardbg/80 backdrop-blur-md sticky top-0 z-50 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="p-2.5 bg-brand-600/20 text-brand-500 rounded-xl border border-brand-500/30">
+                    <i data-lucide="bar-chart-3" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-white">Dashboard Estratégico ODS</h1>
+                    <p class="text-xs text-slate-400">Inteligencia de Datos y Análisis de Sostenibilidad Organizacional</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+                <!-- Dropzone / File Loader Mini Button -->
+                <label for="excel-file-input" class="cursor-pointer flex items-center space-x-2 bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition shadow-lg shadow-brand-600/20">
+                    <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+                    <span>Cargar Excel / CSV</span>
+                </label>
+                <input type="file" id="excel-file-input" class="hidden" accept=".xlsx, .xls, .csv">
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-6 py-8 flex-1 w-full space-y-8">
+
+        <!-- File Drag & Drop Banner (Collapsible/Active) -->
+        <div id="drop-zone" class="border-2 border-dashed border-slate-700 hover:border-brand-500 bg-cardbg/40 hover:bg-cardbg/80 rounded-2xl p-6 text-center cursor-pointer transition flex flex-col items-center justify-center space-y-2">
+            <i data-lucide="file-spreadsheet" class="w-10 h-10 text-brand-500"></i>
+            <p class="text-sm font-medium text-slate-200">Arrastra y suelta aquí tu archivo <span class="text-brand-500 font-semibold">.xlsx, .xls o .csv</span> para recalcular el dashboard en tiempo real</p>
+            <p class="text-xs text-slate-500">Soporta estructuras dinámicas y conjuntos de datos masivos</p>
+        </div>
+
+        <!-- Dynamic Filter Controls -->
+        <section class="bg-cardbg border border-borderbg rounded-2xl p-5 shadow-xl">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="filter" class="w-5 h-5 text-brand-500"></i>
+                    <h2 class="text-base font-semibold text-white">Filtros de Segmentación</h2>
+                </div>
+                <button id="reset-filters" class="text-xs text-slate-400 hover:text-brand-500 flex items-center space-x-1 transition">
+                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                    <span>Restablecer Filtros</span>
+                </button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1.5">Estamento</label>
+                    <select id="filter-estamento" class="w-full bg-darkbg border border-borderbg rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-brand-500">
+                        <option value="ALL">Todos los estamentos</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1.5">Conocimiento de Desarrollo Sostenible</label>
+                    <select id="filter-conocimiento" class="w-full bg-darkbg border border-borderbg rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-brand-500">
+                        <option value="ALL">Todos los niveles</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1.5">Sistema de Pertenencia</label>
+                    <select id="filter-sistema" class="w-full bg-darkbg border border-borderbg rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-brand-500">
+                        <option value="ALL">Todos los sistemas</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        <!-- KPI Metrics Grid -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <!-- KPI 1 -->
+            <div class="bg-cardbg border border-borderbg rounded-2xl p-5 shadow-lg relative overflow-hidden">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Muestra Evaluada</p>
+                        <h3 id="kpi-total" class="text-3xl font-extrabold text-white mt-1">7,096</h3>
+                    </div>
+                    <div class="p-3 bg-blue-500/10 text-blue-500 rounded-xl">
+                        <i data-lucide="users" class="w-6 h-6"></i>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-500 mt-3 flex items-center">
+                    <span class="text-emerald-400 font-semibold mr-1">100%</span> Registros procesados
+                </p>
+            </div>
+
+            <!-- KPI 2 -->
+            <div class="bg-cardbg border border-borderbg rounded-2xl p-5 shadow-lg relative overflow-hidden">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Comprensión ODS</p>
+                        <h3 id="kpi-conocimiento" class="text-3xl font-extrabold text-white mt-1">93.7%</h3>
+                    </div>
+                    <div class="p-3 bg-emerald-500/10 text-emerald-500 rounded-xl">
+                        <i data-lucide="book-open" class="w-6 h-6"></i>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-500 mt-3">Completamente o idea clara del concepto</p>
+            </div>
+
+            <!-- KPI 3 -->
+            <div class="bg-cardbg border border-borderbg rounded-2xl p-5 shadow-lg relative overflow-hidden">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Medición Organizacional</p>
+                        <h3 id="kpi-medicion" class="text-3xl font-extrabold text-white mt-1">31.2%</h3>
+                    </div>
+                    <div class="p-3 bg-amber-500/10 text-amber-500 rounded-xl">
+                        <i data-lucide="target" class="w-6 h-6"></i>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-500 mt-3">Saben que la org. mide su avance ODS</p>
+            </div>
+
+            <!-- KPI 4 -->
+            <div class="bg-cardbg border border-borderbg rounded-2xl p-5 shadow-lg relative overflow-hidden">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Capacitación Recibida</p>
+                        <h3 id="kpi-capacitacion" class="text-3xl font-extrabold text-white mt-1">23.0%</h3>
+                    </div>
+                    <div class="p-3 bg-purple-500/10 text-purple-500 rounded-xl">
+                        <i data-lucide="award" class="w-6 h-6"></i>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-500 mt-3">Han recibido formación ODS institucional</p>
+            </div>
+        </section>
+
+        <!-- Charts Grid -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Chart 1: Percepción de ODS (Prioridad Personal vs Org vs Urgencia) -->
+            <div class="bg-cardbg border border-borderbg rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+                <div>
+                    <h3 class="text-base font-semibold text-white">Priorización de ODS por Ámbito</h3>
+                    <p class="text-xs text-slate-400 mb-4">Comparativo de ODS más relevantes según entorno personal, institucional y político</p>
+                </div>
+                <div class="relative h-72 w-full">
+                    <canvas id="chart-ods-comparative"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 2: Distribución Demográfica -->
+            <div class="bg-cardbg border border-borderbg rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+                <div>
+                    <h3 class="text-base font-semibold text-white">Demografía de Participantes</h3>
+                    <p class="text-xs text-slate-400 mb-4">Composición de muestra por rango de edad y género</p>
+                </div>
+                <div class="relative h-72 w-full">
+                    <canvas id="chart-demographics"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 3: Actores para Impulsar ODS -->
+            <div class="bg-cardbg border border-borderbg rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+                <div>
+                    <h3 class="text-base font-semibold text-white">Actores Clave para el Impulso ODS</h3>
+                    <p class="text-xs text-slate-400 mb-4">Percepción sobre quién debe liderar la agenda de sostenibilidad</p>
+                </div>
+                <div class="relative h-72 w-full">
+                    <canvas id="chart-actors"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 4: Nivel de Formación por Estamento -->
+            <div class="bg-cardbg border border-borderbg rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+                <div>
+                    <h3 class="text-base font-semibold text-white">Distribución por Sistema Organizacional</h3>
+                    <p class="text-xs text-slate-400 mb-4">Participación por sistema funcional dentro de la organización</p>
+                </div>
+                <div class="relative h-72 w-full">
+                    <canvas id="chart-systems"></canvas>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-borderbg py-6 text-center text-xs text-slate-500 mt-12">
+        Dashboard BI Empresarial Generado Automáticamente • Compatible con SheetJS & Chart.js
+    </footer>
+
+    <!-- Application Script Logic -->
+    <script>
+        // Global variables for Data & Chart Instances
+        let rawData = [];
+        let filteredData = [];
+        let charts = {};
+
+        // DOM Elements
+        const fileInput = document.getElementById('excel-file-input');
+        const dropZone = document.getElementById('drop-zone');
+        const filterEstamento = document.getElementById('filter-estamento');
+        const filterConocimiento = document.getElementById('filter-conocimiento');
+        const filterSistema = document.getElementById('filter-sistema');
+        const resetBtn = document.getElementById('reset-filters');
+
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // Sample Base Data (Preloaded from Activity 6 file structure for immediate rendering)
+        const sampleData = [
+            { edad: "Entre 30 y 49 años", genero: "Femenino", estamento: "Colaborador", sistema: "Operacional", conocimiento: "Completamente", medicion: "No", capacitacion: "No", actor: "Instituciones Academicas", odsFamilia: "ODS 10", odsOrg: "ODS 17", odsUrgente: "ODS 1" },
+            { edad: "Entre 30 y 49 años", genero: "Masculino", estamento: "Colaborador", sistema: "Operacional", conocimiento: "Completamente", medicion: "No", capacitacion: "Si", actor: "Sector Privado", odsFamilia: "ODS 8", odsOrg: "ODS 7", odsUrgente: "ODS 4" },
+            { edad: "Entre 50 y 69 años", genero: "Masculino", estamento: "Administrativo", sistema: "Apoyo Institucional", conocimiento: "Completamente", medicion: "Si", capacitacion: "No", actor: "Gobierno", odsFamilia: "ODS 4", odsOrg: "ODS 7", odsUrgente: "ODS 2" },
+            { edad: "Entre 18 y 29 años", genero: "Femenino", estamento: "Cliente", sistema: "Misional", conocimiento: "Tengo una idea del concepto", medicion: "No", capacitacion: "No", actor: "Sociedad Civil", odsFamilia: "ODS 1", odsOrg: "ODS 13", odsUrgente: "ODS 1" },
+            { edad: "Entre 30 y 49 años", genero: "Masculino", estamento: "Colaborador", sistema: "Operacional", conocimiento: "Completamente", medicion: "Si", capacitacion: "Si", actor: "Gobierno", odsFamilia: "ODS 3", odsOrg: "ODS 4", odsUrgente: "ODS 13" }
+        ];
+
+        // Chart Theme Defaults
+        Chart.defaults.color = '#94a3b8';
+        Chart.defaults.font.family = 'Inter, sans-serif';
+
+        // Load Default or Custom Data
+        function processRawData(data) {
+            rawData = data.map(row => {
+                const keys = Object.keys(row);
+                // Dynamically map columns based on header keywords
+                let getKey = (kw) => keys.find(k => k.toLowerCase().includes(kw)) || '';
+                
+                return {
+                    edad: row[getKey('edad')] || row['edad'] || 'No especificado',
+                    genero: row[getKey('gã©nero')] || row[getKey('género')] || row['genero'] || 'No especificado',
+                    estamento: row[getKey('estamento')] || row['estamento'] || 'No especificado',
+                    sistema: row[getKey('sistema')] || row['sistema'] || 'No especificado',
+                    conocimiento: row[getKey('sabe quã© es')] || row[getKey('sabe qué')] || row['conocimiento'] || 'Sin respuesta',
+                    medicion: row[getKey('mide su progreso')] || row['medicion'] || 'No',
+                    capacitacion: row[getKey('capacitaciã³n')] || row[getKey('capacitación')] || row['capacitacion'] || 'No',
+                    actor: row[getKey('actor')] || row['actor'] || 'Otros',
+                    odsFamilia: row[getKey('inmediata preocupaciã³n')] || row[getKey('inmediata preocupación')] || row['odsFamilia'] || 'ODS 1',
+                    odsOrg: row[getKey('mã¡s relevantes para la organizaciã³n')] || row[getKey('más relevantes')] || row['odsOrg'] || 'ODS 13',
+                    odsUrgente: row[getKey('acciones polã­ticas')] || row[getKey('acciones políticas')] || row['odsUrgente'] || 'ODS 1'
+                };
+            });
+
+            populateFilterDropdowns();
+            applyFilters();
+        }
+
+        // Fill Filter Selects
+        function populateFilterDropdowns() {
+            const getUnique = (key) => [...new Set(rawData.map(d => d[key]))].filter(Boolean).sort();
+            
+            fillSelect(filterEstamento, getUnique('estamento'), 'Todos los estamentos');
+            fillSelect(filterConocimiento, getUnique('conocimiento'), 'Todos los niveles');
+            fillSelect(filterSistema, getUnique('sistema'), 'Todos los sistemas');
+        }
+
+        function fillSelect(element, options, defaultText) {
+            element.innerHTML = `<option value="ALL">${defaultText}</option>`;
+            options.forEach(opt => {
+                element.innerHTML += `<option value="${opt}">${opt}</option>`;
+            });
+        }
+
+        // Apply Dynamic Filters
+        function applyFilters() {
+            const valEstamento = filterEstamento.value;
+            const valConocimiento = filterConocimiento.value;
+            const valSistema = filterSistema.value;
+
+            filteredData = rawData.filter(d => {
+                return (valEstamento === 'ALL' || d.estamento === valEstamento) &&
+                       (valConocimiento === 'ALL' || d.conocimiento === valConocimiento) &&
+                       (valSistema === 'ALL' || d.sistema === valSistema);
+            });
+
+            updateKPIs();
+            renderCharts();
+        }
+
+        // Update KPI Cards
+        function updateKPIs() {
+            const total = filteredData.length;
+            document.getElementById('kpi-total').textContent = total.toLocaleString();
+
+            if (total === 0) {
+                document.getElementById('kpi-conocimiento').textContent = '0%';
+                document.getElementById('kpi-medicion').textContent = '0%';
+                document.getElementById('kpi-capacitacion').textContent = '0%';
+                return;
+            }
+
+            const sabedores = filteredData.filter(d => 
+                String(d.conocimiento).toLowerCase().includes('completamente') || 
+                String(d.conocimiento).toLowerCase().includes('idea')
+            ).length;
+            document.getElementById('kpi-conocimiento').textContent = ((sabedores / total) * 100).toFixed(1) + '%';
+
+            const miden = filteredData.filter(d => String(d.medicion).trim().toLowerCase() === 'si').length;
+            document.getElementById('kpi-medicion').textContent = ((miden / total) * 100).toFixed(1) + '%';
+
+            const capacitan = filteredData.filter(d => String(d.capacitacion).trim().toLowerCase() === 'si').length;
+            document.getElementById('kpi-capacitacion').textContent = ((capacitan / total) * 100).toFixed(1) + '%';
+        }
+
+        // Helper function to count frequencies
+        function countBy(data, key) {
+            return data.reduce((acc, curr) => {
+                const val = curr[key] || 'No especificado';
+                acc[val] = (acc[val] || 0) + 1;
+                return acc;
+            }, {});
+        }
+
+        // Render / Refresh Charts
+        function renderCharts() {
+            // Chart 1: Top ODS Comparative
+            const odsFam = countBy(filteredData, 'odsFamilia');
+            const odsOrg = countBy(filteredData, 'odsOrg');
+            const odsLabels = ['ODS 1', 'ODS 3', 'ODS 4', 'ODS 6', 'ODS 7', 'ODS 8', 'ODS 13'];
+
+            updateChart('chart-ods-comparative', 'bar', {
+                labels: odsLabels,
+                datasets: [
+                    {
+                        label: 'Preocupación Familiar',
+                        data: odsLabels.map(l => odsFam[l] || 0),
+                        backgroundColor: '#0284c7'
+                    },
+                    {
+                        label: 'Relevancia Org.',
+                        data: odsLabels.map(l => odsOrg[l] || 0),
+                        backgroundColor: '#10b981'
+                    }
+                ]
+            }, {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'top' } }
+            });
+
+            // Chart 2: Demographics
+            const ages = countBy(filteredData, 'edad');
+            updateChart('chart-demographics', 'doughnut', {
+                labels: Object.keys(ages),
+                datasets: [{
+                    data: Object.values(ages),
+                    backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
+                }]
+            }, {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'right' } }
+            });
+
+            // Chart 3: Key Actors
+            const actors = countBy(filteredData, 'actor');
+            updateChart('chart-actors', 'pie', {
+                labels: Object.keys(actors),
+                datasets: [{
+                    data: Object.values(actors),
+                    backgroundColor: ['#06b6d4', '#8b5cf6', '#ec4899', '#f97316', '#64748b']
+                }]
+            }, {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'right' } }
+            });
+
+            // Chart 4: Systems
+            const systems = countBy(filteredData, 'sistema');
+            updateChart('chart-systems', 'bar', {
+                labels: Object.keys(systems),
+                datasets: [{
+                    label: 'Registros',
+                    data: Object.values(systems),
+                    backgroundColor: '#6366f1',
+                    borderRadius: 8
+                }]
+            }, {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                plugins: { legend: { display: false } }
+            });
+        }
+
+        function updateChart(id, type, data, options) {
+            if (charts[id]) {
+                charts[id].destroy();
+            }
+            const ctx = document.getElementById(id).getContext('2d');
+            charts[id] = new Chart(ctx, { type, data, options });
+        }
+
+        // Handle File Reading (SheetJS)
+        function handleFile(file) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const json = XLSX.utils.sheet_to_json(worksheet);
+                processRawData(json);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Event Listeners
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) handleFile(e.target.files[0]);
+        });
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('border-brand-500', 'bg-cardbg/80');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('border-brand-500', 'bg-cardbg/80');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-brand-500', 'bg-cardbg/80');
+            if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
+        });
+
+        filterEstamento.addEventListener('change', applyFilters);
+        filterConocimiento.addEventListener('change', applyFilters);
+        filterSistema.addEventListener('change', applyFilters);
+
+        resetBtn.addEventListener('click', () => {
+            filterEstamento.value = 'ALL';
+            filterConocimiento.value = 'ALL';
+            filterSistema.value = 'ALL';
+            applyFilters();
+        });
+
+        // Initialize with default dataset
+        processRawData(sampleData);
+    </script>
+</body>
+</html>
